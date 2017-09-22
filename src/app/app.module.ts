@@ -5,7 +5,7 @@ import { HttpModule } from '@angular/http';
 import { StoreModule, Store, Action } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
 
-import { UpgradeModule } from '@angular/upgrade/static';
+import { UpgradeModule, downgradeComponent } from '@angular/upgrade/static';
 import { MyEffects } from './my.effects';
 
 import { AppComponent } from './app.component';
@@ -14,6 +14,8 @@ export function rootScopeFactory($injector) {
   return $injector.get('$rootScope');
 }
 
+const app = (window as any).angular.module('myApp', [])
+  .directive('appRoot', downgradeComponent({ component: AppComponent }));
 
 export interface State {
   ids: string[];
@@ -42,19 +44,21 @@ export function reducer(state = initialState, action: Action): State {
     StoreModule.forRoot(reducer),
     EffectsModule.forRoot([MyEffects]),
   ],
+  entryComponents: [AppComponent],
   providers: [
     {
-        provide: '$rootScope', useFactory: rootScopeFactory, deps: ['$injector']
+      provide: '$rootScope', useFactory: rootScopeFactory, deps: ['$injector']
     }
-  ],
-  bootstrap: [AppComponent]
+  ]
 })
 export class AppModule {
-  constructor(private upgrade: UpgradeModule) {}
+  constructor(private upgrade: UpgradeModule, private store: Store<any>) {}
 
-  public ngDoBootstrap() {
+  ngDoBootstrap() {
     this.upgrade.bootstrap(document.getElementById('appPlaceHolder'),
-      null,
+      ['myApp'],
       { strictDi: true });
+
+    this.store.dispatch({ type: 'any' });
   }
  }
